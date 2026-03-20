@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Company" ADD COLUMN     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN     "logo" TEXT,
+ADD COLUMN     "primaryColor" TEXT;

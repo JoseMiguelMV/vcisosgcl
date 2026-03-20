@@ -13,11 +13,14 @@ model Company {
   rut          String
   legalContact String
   configured   Boolean    @default(false)
+  logo         String?    // URL o base64
+  primaryColor String?    // Ej: #3b82f6
   users        User[]
   controls     Control[]
   risks        Risk[]
   incidents    Incident[]
   documents    Document[]
+  createdAt    DateTime   @default(now())
 }
 
 model User {

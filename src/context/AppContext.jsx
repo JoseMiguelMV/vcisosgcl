@@ -158,7 +158,7 @@ export const AppProvider = ({ children }) => {
   useEffect(() => { document.documentElement.setAttribute('data-theme', theme); }, [theme]);
 
   const value = {
-    user, company, isLoggedIn, login, register, logout, registerUser, users, loadingUsers,
+    user, company, setCompany, isLoggedIn, login, register, logout, registerUser, users, loadingUsers,
     companies, createCompanyWithAdmin, setupSuperAdmin, incidents, compliance, controls, 
     updateControlState, risks, documents, theme, toggleTheme: () => setTheme(t => t === 'dark' ? 'light' : 'dark'),
     getAdvisorRecommendations: () => [] // Placeholder to prevent crash
