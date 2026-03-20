@@ -155,24 +155,45 @@ function Settings() {
                     onChange={e => setFormData({...formData, rut: e.target.value})} 
                   />
                 </div>
-                <div className="form-group md:col-span-2">
-                  <label className="form-label text-xs font-black uppercase tracking-widest text-[var(--text-muted)]">Representante Legal / CISO Responsable</label>
-                  <input 
-                    type="text" 
-                    className="form-control" 
-                    placeholder="Nombre Completo" 
-                    value={formData.legalContact} 
-                    onChange={e => setFormData({...formData, legalContact: e.target.value})} 
-                  />
+                <div className="form-group col-span-2 mt-4 border-b border-[var(--border-color)] pb-8 mb-8">
+                  <label className="form-label text-xs font-black uppercase tracking-widest text-[var(--text-muted)]">Responsable Legal (Para Notificaciones ley 19.628 / 21.459)</label>
+                  <input type="email" className="form-control" value={formData.legalContact} onChange={e => setFormData({...formData, legalContact: e.target.value})} placeholder="legal@empresa.cl" />
+                  <p className="text-xs mt-2 text-[var(--text-muted)]">Este correo recibirá el exportable cuando se levante un incidente grave con plazo legal.</p>
+                </div>
+
+                <div className="form-group col-span-2">
+                   <h4 className="text-sm font-black uppercase tracking-tighter mb-4 flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-[var(--brand-primary)]" />
+                      Personalización de Marca (Whitelabeling)
+                   </h4>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6 rounded-2xl bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] shadow-inner">
+                      <div>
+                         <label className="form-label text-[10px] font-bold uppercase opacity-50">Color Primario Corporativo</label>
+                         <div className="flex gap-4 items-center mt-3">
+                            <input type="color" className="w-12 h-12 p-0 border-none bg-transparent cursor-pointer rounded-lg overflow-hidden" value={formData.primaryColor || '#3b82f6'} onChange={e => setFormData({...formData, primaryColor: e.target.value})} />
+                            <div className="flex flex-col">
+                               <span className="font-mono text-sm font-bold uppercase tracking-tight">{formData.primaryColor || '#3b82f6'}</span>
+                               <span className="text-[10px] text-[var(--text-muted)] italic">Afecta botones y headers</span>
+                            </div>
+                         </div>
+                      </div>
+                      <div>
+                         <label className="form-label text-[10px] font-bold uppercase opacity-50">URL del Logo (PNG / SVG)</label>
+                         <input type="text" className="form-control mt-2" placeholder="https://cdn.empresa.com/logo.png" value={formData.logo || ''} onChange={e => setFormData({...formData, logo: e.target.value})} />
+                         <p className="text-[10px] text-[var(--text-muted)] mt-2">Se recomienda fondo transparente y proporción horizontal.</p>
+                      </div>
+                   </div>
                 </div>
               </div>
 
-               <div className="mt-8 p-6 rounded-2xl bg-[rgba(16,185,129,0.03)] border border-[rgba(16,185,129,0.1)]">
-                  <h4 className="text-sm font-bold flex items-center gap-2 mb-2">
-                     <CheckCircle className="w-4 h-4 text-[var(--brand-success)]" />
-                     Estado de Configuración Saas
-                  </h4>
-                  <p className="text-xs text-[var(--text-secondary)]">Al completar estos datos, su plataforma se activará completamente para el análisis de brechas ISO 27001.</p>
+               <div className="mt-10 p-6 rounded-2xl bg-[rgba(16,185,129,0.03)] border border-[rgba(16,185,129,0.1)] flex items-center gap-4">
+                  <div className="p-3 bg-[var(--brand-success)] rounded-xl text-white shadow-glow-sm">
+                     <CheckCircle className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold uppercase tracking-tight">Estado de Configuración Saas</h4>
+                    <p className="text-xs text-[var(--text-secondary)]">Al completar estos datos, su plataforma se activará completamente para el análisis de brechas ISO 27001.</p>
+                  </div>
                </div>
             </div>
           )}
