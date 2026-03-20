@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Shield, Lock, Building, User, ArrowRight, Settings } from 'lucide-react';
+import { Shield, Lock, Building, User, ArrowRight, Settings, Info, Briefcase, Globe } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
+import { useNavigate } from 'react-router-dom';
 
 function Login() {
   const [mode, setMode] = useState('login'); // login, register, superadmin_setup, superadmin_login
@@ -26,97 +26,94 @@ function Login() {
         await register(formData.email, formData.password, formData.name, formData.companyName);
       } else if (mode === 'superadmin_setup') {
         await setupSuperAdmin(formData.email, formData.password, formData.name);
+        navigate('/superadmin');
       } else if (mode === 'superadmin_login') {
-        await login(formData.email, formData.password, ''); // SuperAdmin logs in without company or 'SISTEMA'
+        await login(formData.email, formData.password, 'SISTEMA');
+        navigate('/superadmin');
       } else {
         await login(formData.email, formData.password, formData.companyName);
       }
-      navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Error en la autenticación. Verifique sus datos.');
+      setError(err.message || 'Error de autenticación. Verifique sus credenciales.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const modeInfo = {
+    login: { title: 'Acceso de Empresa', subtitle: 'Ingrese sus credenciales de GRC Corporativo', icon: <Building /> },
+    register: { title: 'Alta de Organización', subtitle: 'Registrar nueva empresa en la plataforma vCISO', icon: <Briefcase className="text-[var(--brand-primary)]" /> },
+    superadmin_setup: { title: 'Instalación de Sistema', subtitle: 'Configurar Administrador de Sistema Inicial (Root)', icon: <Settings className="text-[var(--brand-warning)]" /> },
+    superadmin_login: { title: 'Consola Central Root', subtitle: 'Acceso Administrador de Infraestructura SaaS', icon: <Globe className="text-[var(--brand-warning)]" /> },
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)] overflow-hidden relative">
-      <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-[rgba(16,185,129,0.05)] rounded-full blur-[100px]" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-[rgba(14,165,233,0.05)] rounded-full blur-[100px]" />
-
-      <div className="card w-full max-w-md p-8 animate-fade-in relative z-10 border-[rgba(255,255,255,0.05)] backdrop-blur-md bg-[rgba(15,23,42,0.8)]">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center p-3 rounded-xl bg-[rgba(16,185,129,0.1)] text-[var(--brand-primary)] mb-4">
-            <Shield className="w-10 h-10" />
+    <div className="login-page">
+      <div className="login-card animate-fade-in stagger-2">
+        <div className="login-header">
+          <div className="logo-container">
+            <Shield className="w-12 h-12 text-[var(--brand-primary)]" />
           </div>
-          <h1 className="text-3xl font-bold text-[var(--text-primary)]">
-            {mode.startsWith('superadmin') ? 'Acceso de Sistema' : 'SGCS Chile'}
+          <h1 className="text-3xl font-black mt-6 tracking-tight flex items-center gap-3">
+             {modeInfo[mode].icon}
+             {modeInfo[mode].title}
           </h1>
-          <p className="text-[var(--text-secondary)] mt-2">
-            {mode.startsWith('superadmin') ? 'Panel de Control Root' : 'vCISO Sistema de Gestión Multi-Empresa'}
-          </p>
+          <p className="text-[var(--text-muted)] mt-2 font-medium">{modeInfo[mode].subtitle}</p>
         </div>
 
         {error && (
-          <div className="bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.2)] text-[var(--brand-danger)] p-4 rounded-lg mb-6 text-sm flex items-start gap-3">
+          <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl text-sm mb-6 flex items-center gap-3 animate-slide-in">
              <Info className="w-5 h-5 flex-shrink-0" />
              {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {mode !== 'superadmin_setup' && mode !== 'superadmin_login' && (
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {(mode === 'register' || mode === 'superadmin_setup') && (
             <div className="form-group">
-              <label className="form-label">Nombre de la Empresa</label>
+              <label className="form-label">Nombre Completo</label>
               <div className="relative">
-                <Building className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
-                <input
-                  type="text"
-                  name="companyName"
-                  className="form-control pl-12"
-                  placeholder="Ej: InnovaCorp SPA"
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
+                <input 
+                  type="text" 
+                  className="form-control pl-12" 
                   required
-                  value={formData.companyName}
-                  onChange={handleChange}
+                  placeholder="Ej: Juan Pérez"
+                  value={formData.name}
+                  onChange={e => setFormData({...formData, name: e.target.value})}
                 />
               </div>
             </div>
           )}
 
-          {(mode === 'register' || mode === 'superadmin_setup') && (
-            <div className="form-group animate-fade-in">
-              <label className="form-label">Tu Nombre</label>
+          {mode === 'register' || mode === 'login' ? (
+            <div className="form-group">
+              <label className="form-label">Nombre de la Empresa</label>
               <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
-                <input
-                  type="text"
-                  name="name"
-                  className="form-control pl-12"
-                  placeholder="Juan Pérez"
+                <Building className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
+                <input 
+                  type="text" 
+                  className="form-control pl-12" 
                   required
-                  value={formData.name}
-                  onChange={handleChange}
+                  placeholder="Empresa Cliente"
+                  value={formData.companyName}
+                  onChange={e => setFormData({...formData, companyName: e.target.value})}
                 />
               </div>
             </div>
-          )}
+          ) : null}
 
           <div className="form-group">
             <label className="form-label">Correo Electrónico</label>
             <div className="relative">
               <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
-              <input
-                type="email"
-                name="email"
-                className="form-control pl-12"
-                placeholder="usuario@empresa.cl"
+              <input 
+                type="email" 
+                className="form-control pl-12" 
                 required
+                placeholder="usuario@empresa.com"
                 value={formData.email}
-                onChange={handleChange}
+                onChange={e => setFormData({...formData, email: e.target.value})}
               />
             </div>
           </div>
@@ -125,74 +122,63 @@ function Login() {
             <label className="form-label">Contraseña</label>
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
-              <input
-                type="password"
-                name="password"
-                className="form-control pl-12"
-                placeholder="••••••••"
+              <input 
+                type="password" 
+                className="form-control pl-12" 
                 required
+                placeholder="********"
                 value={formData.password}
-                onChange={handleChange}
+                onChange={e => setFormData({...formData, password: e.target.value})}
               />
             </div>
           </div>
 
           <button 
             type="submit" 
-            className={`btn ${mode.startsWith('superadmin') ? 'btn-warning' : 'btn-primary'} w-full py-4 text-lg shadow-glow mt-6`}
+            className={`btn btn-primary w-full py-4 text-base font-bold shadow-glow flex items-center justify-center gap-2 ${loading ? 'opacity-50' : ''}`}
             disabled={loading}
           >
-            {loading ? 'Procesando...' : 
-             mode === 'register' ? 'Registrar Empresa' : 
-             mode === 'superadmin_setup' ? 'Configurar Sistema' : 
-             'Ingresar al Sistema'}
-            {!loading && <ArrowRight className="w-5 h-5 ml-2" />}
+            {loading ? 'Procesando...' : (mode === 'login' || mode === 'superadmin_login' ? 'Ingresar al Portal' : 'Confirmar Registro')}
+            <ArrowRight className="w-5 h-5" />
           </button>
         </form>
 
-        <div className="mt-8 pt-6 border-t border-[rgba(255,255,255,0.05)] flex flex-col gap-4 text-center">
-          <div className="text-sm">
-            <span className="text-[var(--text-muted)]">
-              {mode === 'login' ? '¿Quieres registrar tu empresa?' : '¿Ya tienes una cuenta?'}
-            </span>
-            <button
-              onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
-              className="ml-2 font-bold text-[var(--brand-primary)] hover:underline"
-            >
-              {mode === 'login' ? 'Crea una cuenta aquí' : 'Inicia Sesión'}
-            </button>
-          </div>
-
-          <button
-            onClick={() => setMode(mode === 'superadmin_login' ? 'login' : 'superadmin_login')}
-            className="text-xs text-[var(--text-muted)] flex items-center justify-center gap-2 hover:text-white"
-          >
-            <Settings className="w-3 h-3" />
-            {mode === 'superadmin_login' ? 'Volver al ingreso normal' : 'Acceso Administrador de Aplicativo'}
-          </button>
-          
-          {mode === 'superadmin_login' && (
-            <button
-              onClick={() => setMode('superadmin_setup')}
-              className="text-[10px] text-[var(--brand-warning)] opacity-70 hover:opacity-100"
-            >
-              Instalar Administrador Inicial (Solo primera vez)
-            </button>
+        <div className="login-footer pt-8 mt-8 border-t border-[var(--border-color)] text-center text-sm">
+          {mode === 'login' ? (
+            <p className="text-[var(--text-muted)]">
+              ¿No tiene una cuenta? <button onClick={() => setMode('register')} className="text-[var(--brand-primary)] font-bold hover:underline">Solicitar Alta de Empresa</button>
+            </p>
+          ) : (
+            <button onClick={() => setMode('login')} className="text-[var(--text-muted)] hover:text-white uppercase text-[10px] font-bold tracking-widest">Volver al Ingreso Estándar</button>
           )}
+
+          <div className="mt-8 flex flex-col gap-3">
+             <button 
+                onClick={() => setMode(mode === 'superadmin_login' ? 'login' : 'superadmin_login')} 
+                className="text-xs text-[var(--text-muted)] opacity-50 hover:opacity-100 flex items-center justify-center gap-2"
+             >
+                <Settings className="w-3 h-3" />
+                Administración de la Infraestructura SaaS
+             </button>
+             {mode === 'superadmin_login' && (
+               <button 
+                 onClick={() => setMode('superadmin_setup')}
+                 className="text-[10px] text-[var(--brand-warning)] font-bold uppercase tracking-widest border border-[var(--brand-warning)] border-opacity-30 rounded px-2 py-1 mx-auto"
+               >
+                 Instalación Inicial Root
+               </button>
+             )}
+          </div>
         </div>
       </div>
       
-      <div className="absolute bottom-8 text-center w-full">
-        <p className="text-xs text-[var(--text-muted)] opacity-50">
-          SGCS Chile v2.0 SaaS - Control Multi-Tenant Root enabled
-        </p>
+      <div className="login-background">
+        <div className="blob"></div>
+        <div className="blob"></div>
+        <div className="blob"></div>
       </div>
     </div>
   );
 }
-
-const Info = ({ className }) => (
-  <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-);
 
 export default Login;

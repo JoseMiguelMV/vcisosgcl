@@ -32,7 +32,8 @@ model User {
 }
 
 model Control {
-  id        String   @id
+  dbId      String   @id @default(uuid())
+  id        String   // Ej: A.5.1
   norm      String
   name      String
   state     String

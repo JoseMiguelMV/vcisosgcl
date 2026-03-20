@@ -15,11 +15,24 @@ import Reports from './pages/Reports';
 import Login from './pages/Login';
 import Administration from './pages/Administration';
 import SuperAdmin from './pages/SuperAdmin';
+import { Loader2 } from 'lucide-react';
 
 function AuthGuard({ children, roleRequired }) {
-  const { isLoggedIn, user } = useAppContext();
+  const { isLoggedIn, user, loadingUsers } = useAppContext();
   
   if (!isLoggedIn) return <Navigate to="/login" replace />;
+  
+  // If we are loading initial data, show a nice transition
+  if (loadingUsers && !children.props?.path?.includes('login')) {
+     return (
+       <div className="fixed inset-0 bg-[var(--bg-primary)] flex flex-col items-center justify-center z-[9999]">
+          <Loader2 className="w-12 h-12 text-[var(--brand-primary)] animate-spin mb-4" />
+          <div className="text-xl font-bold tracking-tighter uppercase">Sincronizando Entorno Seguro...</div>
+          <div className="text-xs text-[var(--text-muted)] mt-2 font-mono">Cargando módulos de cumplimiento vCISO</div>
+       </div>
+     );
+  }
+
   if (roleRequired && user?.role !== roleRequired) return <Navigate to="/dashboard" replace />;
   
   return children;

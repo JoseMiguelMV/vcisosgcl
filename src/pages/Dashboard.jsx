@@ -1,11 +1,11 @@
 import React from 'react';
 import { useAppContext } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, AlertTriangle, CheckSquare, Activity, LayoutDashboard, ShieldAlert, Clock, ArrowRight, BrainCircuit, TrendingDown, DollarSign } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, CheckSquare, Activity, ShieldAlert, Clock, ArrowRight, BrainCircuit, TrendingDown, DollarSign, Target, Zap } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
 function Dashboard() {
-  const { compliance, incidents, company, controls, getAdvisorRecommendations, risks } = useAppContext();
+  const { compliance, incidents, company, controls, risks } = useAppContext();
   const navigate = useNavigate();
 
   const activeIncidents = incidents.filter(i => i.status !== 'Cerrado').length;
@@ -13,11 +13,8 @@ function Dashboard() {
   const totalControls = controls.length;
   const percentAudited = totalControls ? Math.round((auditedControls / totalControls) * 100) : 0;
   
-  const recommendations = getAdvisorRecommendations();
-
-  // vCISO Financial Impact Logic (Estimation in UF for Chile)
-  const criticalRisksCount = risks.filter(r => (r.impact * r.probability) >= 20).length;
-  const estimatedFineUF = criticalRisksCount * 5000; // Sample fine value for data protection breaches
+  const criticalRisksCount = (risks || []).filter(r => (r.impact * r.probability) >= 20).length;
+  const estimatedFineUF = criticalRisksCount * 5000;
   
   const getComplianceColor = (val) => {
     if(val >= 80) return 'var(--brand-success)';
@@ -38,141 +35,144 @@ function Dashboard() {
   const trendData = [
     { name: 'Ene', iso: 20, nist: 30 },
     { name: 'Feb', iso: 35, nist: 45 },
-    { name: 'Mar', iso: 45, nist: 60 },
+    { name: 'Mar', iso: compliance.iso27001, nist: compliance.nist },
   ];
 
   return (
     <div className="animate-fade-in stagger-1">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Dashboard Ejecutivo</h1>
-          <p className="page-subtitle">
-            Visión general del Sistema de Gestión de Ciberseguridad
-            {company.name && <span> para <strong className="text-[var(--text-primary)]">{company.name}</strong></span>}
+          <h1 className="page-title text-4xl font-black mb-1">Centro de Mando GRC</h1>
+          <p className="page-subtitle flex items-center gap-2">
+            <Target className="w-4 h-4 text-[var(--brand-primary)]" />
+            Estado actual de la Postura de Seguridad: {company?.name || 'Cargando...'}
           </p>
         </div>
-        <button className="btn btn-primary" onClick={() => window.location.href = '#/reports'}>Descargar Reporte</button>
-      </div>
-
-      {!company.configured && (
-        <div className="card mb-8 p-6 bg-[rgba(16,185,129,0.05)] border-2 border-[var(--brand-primary)] flex flex-col sm:flex-row justify-between items-center gap-4 shadow-glow">
-          <div>
-            <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">👋 ¡Bienvenido al VCISO!</h2>
-            <p className="text-[var(--text-secondary)] text-sm">Para comenzar el Análisis de Brechas y ver sus métricas consolidadas, primero inicie su <strong>onboarding</strong> registrando la empresa y el alcance del SGSI.</p>
-          </div>
-          <button className="btn btn-primary min-w-[200px]" onClick={() => navigate('/settings')}>
-            Comenzar Configuración
+        <div className="flex gap-3">
+          <button className="btn btn-outline" onClick={() => navigate('/reports')}>
+            Auditar SoA
+          </button>
+          <button className="btn btn-primary" onClick={() => window.print()}>
+            Reporte Ejecutivo
           </button>
         </div>
-      )}
-
-      <div className="grid-4 mb-32">
-        <div className="card kpi-card">
-          <div className="kpi-header">
-            <span className="kpi-title">Cumplimiento ISO 27001</span>
-            <div className="kpi-icon"><ShieldCheck /></div>
-          </div>
-          <div className="kpi-value" style={{color: getComplianceColor(compliance.iso27001)}}>{compliance.iso27001}%</div>
-          <div className="progress-bg"><div className="progress-fill" style={{width: `${compliance.iso27001}%`, background: getComplianceColor(compliance.iso27001)}}></div></div>
-        </div>
-        
-        <div className="card kpi-card">
-          <div className="kpi-header">
-            <span className="kpi-title">Cumplimiento NIST CSF</span>
-            <div className="kpi-icon"><Activity /></div>
-          </div>
-          <div className="kpi-value" style={{color: getComplianceColor(compliance.nist)}}>{compliance.nist}%</div>
-          <div className="progress-bg"><div className="progress-fill" style={{width: `${compliance.nist}%`, background: getComplianceColor(compliance.nist)}}></div></div>
-        </div>
-
-        <div className="card kpi-card">
-          <div className="kpi-header">
-            <span className="kpi-title">Incidentes Activos</span>
-            <div className="kpi-icon" style={{color: 'var(--brand-danger)', backgroundColor: 'rgba(239, 68, 68, 0.1)'}}><AlertTriangle /></div>
-          </div>
-          <div className="kpi-value">{activeIncidents}</div>
-          <div className="kpi-trend trend-down">Atención requerida según Ley 21.459</div>
-        </div>
-
-        <div className="card kpi-card">
-          <div className="kpi-header">
-            <span className="kpi-title">Exposición al Riesgo (Est.)</span>
-            <div className="kpi-icon text-[var(--brand-danger)]"><DollarSign /></div>
-          </div>
-          <div className="kpi-value text-[var(--brand-danger)]">{estimatedFineUF.toLocaleString()} UF</div>
-          <div className="kpi-trend trend-down">Multa Potencial Ley 19.628</div>
-        </div>
       </div>
 
-      {/* vCISO Intelligent Advisor Section */}
-      <div className="mb-8">
-        <div className="flex items-center gap-2 mb-4">
-          <BrainCircuit className="w-6 h-6 text-[var(--brand-primary)]" />
-          <h2 className="text-xl font-bold uppercase tracking-tight">vCISO Intelligent Advisor</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+        <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="card kpi-card">
+            <div className="kpi-header">
+              <span className="kpi-title">Madurez ISO 27001</span>
+              <div className="kpi-icon"><ShieldCheck className="text-[var(--brand-success)]" /></div>
+            </div>
+            <div className="kpi-value" style={{color: getComplianceColor(compliance.iso27001)}}>{compliance.iso27001}%</div>
+            <div className="progress-bg h-1"><div className="progress-fill shadow-glow-sm" style={{width: `${compliance.iso27001}%`, background: getComplianceColor(compliance.iso27001)}}></div></div>
+          </div>
+          
+          <div className="card kpi-card">
+            <div className="kpi-header">
+              <span className="kpi-title">Marcos NIST CSF</span>
+              <div className="kpi-icon"><Activity className="text-[var(--brand-info)]" /></div>
+            </div>
+            <div className="kpi-value" style={{color: getComplianceColor(compliance.nist)}}>{compliance.nist}%</div>
+            <div className="progress-bg h-1"><div className="progress-fill shadow-glow-sm" style={{width: `${compliance.nist}%`, background: getComplianceColor(compliance.nist)}}></div></div>
+          </div>
+
+          <div className="card kpi-card">
+            <div className="kpi-header">
+              <span className="kpi-title">Brechas Legales Activas</span>
+              <div className="kpi-icon text-[var(--brand-danger)]"><AlertTriangle /></div>
+            </div>
+            <div className="kpi-value text-[var(--brand-danger)]">{activeIncidents}</div>
+            <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-bold">Ley 21.459 / 19.628</div>
+          </div>
+
+          <div className="card kpi-card">
+            <div className="kpi-header">
+              <span className="kpi-title">Mitigación Proyectada</span>
+              <div className="kpi-icon text-[var(--brand-primary)]"><Zap /></div>
+            </div>
+            <div className="kpi-value text-[var(--brand-primary)]">{percentAudited}%</div>
+            <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-bold">Controles con Evidencia</div>
+          </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {recommendations.length > 0 ? recommendations.map((rec, idx) => (
-            <div key={idx} className={`card border-l-4 ${
-              rec.priority === 'Crítica' ? 'border-l-[var(--brand-danger)]' : 
-              rec.priority === 'Urgente' ? 'border-l-[var(--brand-warning)]' : 
-              'border-l-[var(--brand-primary)]'
-            } bg-gradient-to-r from-[rgba(59,130,246,0.05)] to-transparent`}>
-              <div className="flex justify-between items-start mb-2">
-                <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${
-                  rec.priority === 'Crítica' ? 'bg-[var(--brand-danger)] text-white' : 
-                  rec.priority === 'Urgente' ? 'bg-[var(--brand-warning)] text-white' : 
-                  'bg-[var(--brand-primary)] text-white'
-                }`}>
-                  {rec.priority}
-                </span>
-                <TrendingDown className="w-4 h-4 opacity-30" />
+
+        <div className="card border-[rgba(59,130,246,0.3)] bg-gradient-to-br from-[rgba(59,130,246,0.1)] to-transparent flex flex-col justify-between">
+           <div>
+              <h3 className="text-xs font-black uppercase tracking-widest text-[var(--brand-primary)] mb-4">Estado de Auditoría</h3>
+              <div className="flex items-center gap-4 mb-6">
+                 <div className="relative w-16 h-16">
+                    <svg className="w-16 h-16 -rotate-90">
+                       <circle cx="32" cy="32" r="28" stroke="var(--bg-tertiary)" strokeWidth="4" fill="transparent" />
+                       <circle cx="32" cy="32" r="28" stroke="var(--brand-primary)" strokeWidth="4" fill="transparent" 
+                               strokeDasharray={`${2 * Math.PI * 28}`} 
+                               strokeDashoffset={`${2 * Math.PI * 28 * (1 - percentAudited/100)}`} 
+                               strokeLinecap="round" />
+                    </svg>
+                    <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold">{percentAudited}%</span>
+                 </div>
+                 <div>
+                    <div className="text-lg font-bold leading-none">{auditedControls} / {totalControls}</div>
+                    <div className="text-[10px] text-[var(--text-muted)] uppercase font-medium">Controles Auditados</div>
+                 </div>
               </div>
-              <p className="text-sm font-medium text-[var(--text-primary)] leading-tight">{rec.message}</p>
-              <button 
-                onClick={() => navigate('/roadmap')}
-                className="mt-4 text-xs font-bold text-[var(--brand-primary)] flex items-center gap-1 hover:underline"
-              >
-                Ejecutar Acción <ArrowRight className="w-3 h-3" />
-              </button>
-            </div>
-          )) : (
-            <div className="col-span-3 card p-8 text-center bg-transparent border-dashed border-2">
-              <p className="text-[var(--text-muted)]">No se detectan alertas críticas. La postura de seguridad es estable.</p>
-            </div>
-          )}
+           </div>
+           <button onClick={() => navigate('/compliance')} className="btn btn-primary w-full text-xs py-2">
+              Ver Mapa de Controles
+           </button>
         </div>
       </div>
 
-      <div className="grid-2">
-        <div className="card">
-          <h3 className="mb-4 text-lg">Estado de Implementación de Controles</h3>
-          <div style={{ width: '100%', height: 300 }}>
-            <ResponsiveContainer>
-              <PieChart>
-                <Pie data={pieData} innerRadius={80} outerRadius={110} paddingAngle={5} dataKey="value">
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', borderRadius: '8px' }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="card">
-          <h3 className="mb-4 text-lg">Evolución del SGSI</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div className="card p-8">
+          <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+             <TrendingDown className="text-[var(--brand-primary)]" />
+             Evolución Histórica del Cumplimiento
+          </h3>
           <div style={{ width: '100%', height: 300 }}>
             <ResponsiveContainer>
               <LineChart data={trendData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
-                <XAxis dataKey="name" stroke="var(--text-muted)" />
-                <YAxis stroke="var(--text-muted)" />
-                <Tooltip contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }} />
-                <Line type="monotone" dataKey="iso" stroke="var(--brand-primary)" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} name="ISO 27001" />
-                <Line type="monotone" dataKey="nist" stroke="var(--brand-secondary)" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} name="NIST CSF 2.0" />
+                <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} />
+                <YAxis stroke="var(--text-muted)" fontSize={12} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', borderRadius: '12px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }} 
+                  itemStyle={{ fontWeight: 'bold' }}
+                />
+                <Line type="monotone" dataKey="iso" stroke="var(--brand-primary)" strokeWidth={4} dot={{r: 5, fill: 'var(--brand-primary)'}} activeDot={{r: 8}} name="ISO 27001" />
+                <Line type="monotone" dataKey="nist" stroke="var(--brand-secondary)" strokeWidth={4} dot={{r: 5, fill: 'var(--brand-secondary)'}} activeDot={{r: 8}} name="NIST CSF" />
               </LineChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="card p-8">
+          <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+             <CheckSquare className="text-[var(--brand-primary)]" />
+             Vigilancia Tecnológica y GRC
+          </h3>
+          <div style={{ width: '100%', height: 300 }}>
+            <ResponsiveContainer>
+              <PieChart>
+                <Pie data={pieData} innerRadius={80} outerRadius={110} paddingAngle={8} dataKey="value" stroke="none">
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', borderRadius: '12px' }} 
+                  itemStyle={{ color: 'white' }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex justify-center gap-6 mt-4">
+             {pieData.map(d => (
+               <div key={d.name} className="flex items-center gap-2">
+                 <div className="w-3 h-3 rounded-full" style={{backgroundColor: d.color}}></div>
+                 <span className="text-[10px] uppercase font-bold text-[var(--text-muted)]">{d.name}: {d.value}</span>
+               </div>
+             ))}
           </div>
         </div>
       </div>
