@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: vciso_admin
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: sgcs_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+  backend:
+    build: ./server
+    restart: always
+    environment:
+      DATABASE_URL: "postgresql://vciso_admin:password123@db:5432/sgcs_db"
+      PORT: 3000
+    depends_on:
+      - db
+    ports:
+      - "3050:3000"
+
+  frontend:
+    build: .
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  postgres_data:

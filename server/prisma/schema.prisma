@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id           String  @id @default(uuid())
+  name         String
+  rut          String
+  legalContact String
+  configured   Boolean @default(false)
+}
+
+model Control {
+  id    String @id
+  norm  String
+  name  String
+  state String
+  ley   String
+}
+
+model Risk {
+  id          String @id @default(uuid())
+  title       String
+  impact      Int
+  probability Int
+  plan        String
+  description String
+}
+
+model Incident {
+  id             String        @id @default(uuid())
+  title          String
+  description    String
+  severity       String
+  status         String
+  date           DateTime      @default(now())
+  legalCountdown Int?
+  logs           IncidentLog[]
+}
+
+model IncidentLog {
+  id         String   @id @default(uuid())
+  action     String
+  user       String
+  date       DateTime @default(now())
+  incidentId String
+  incident   Incident @relation(fields: [incidentId], references: [id])
+}
+
+model Document {
+  id     Int      @id @default(autoincrement())
+  name   String
+  type   String
+  folder String
+  date   DateTime @default(now())
+  size   String
+  author String
+}
