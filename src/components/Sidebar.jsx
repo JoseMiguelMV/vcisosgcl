@@ -1,19 +1,29 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Map, CheckSquare, ShieldAlert, FileText, Settings, ShieldCheck, Users } from 'lucide-react';
+import { LayoutDashboard, Map, CheckSquare, ShieldAlert, FileText, Settings, ShieldCheck, Users, Globe } from 'lucide-react';
+import { useAppContext } from '../context/AppContext';
 
 function Sidebar({ mobileOpen }) {
+  const { user } = useAppContext();
+  
   const menuItems = [
     { name: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" />, path: '/dashboard' },
     { name: 'Mapa de Ruta', icon: <Map className="w-5 h-5" />, path: '/roadmap' },
     { name: 'Cumplimiento', icon: <CheckSquare className="w-5 h-5" />, path: '/compliance' },
     { name: 'Gestión de Riesgos', icon: <ShieldAlert className="w-5 h-5" />, path: '/risks' },
-    { name: 'Incidentes', icon: <ShieldCheck className="w-5 h-5" />, path: '/incidents' },
-    { name: 'Repositorio', icon: <FileText className="w-5 h-5" />, path: '/documents' },
+    { name: 'Incidentes', icon: <ShieldCheck className="w-5 h-5 cursor-pointer" />, path: '/incidents' },
+    { name: 'Repositorio', icon: <FileText className="w-5 h-5 cursor-pointer" />, path: '/documents' },
     { name: 'Reportes', icon: <FileText className="w-5 h-5" />, path: '/reports' },
-    { name: 'Administración', icon: <Users className="w-5 h-5" />, path: '/administration' },
-    { name: 'Configuración', icon: <Settings className="w-5 h-5" />, path: '/settings' },
   ];
+
+  // Role based links
+  if (user?.role === 'SUPER_ADMIN') {
+    menuItems.push({ name: 'Consola Global', icon: <Globe className="w-5 h-5" />, path: '/superadmin' });
+  } else if (user?.role === 'ADMIN') {
+    menuItems.push({ name: 'Administración', icon: <Users className="w-5 h-5" />, path: '/administration' });
+  }
+
+  menuItems.push({ name: 'Configuración', icon: <Settings className="w-5 h-5" />, path: '/settings' });
 
   return (
     <aside className={`sidebar ${mobileOpen ? 'mobile-open' : ''}`}>
@@ -22,7 +32,9 @@ function Sidebar({ mobileOpen }) {
           <ShieldCheck className="brand-icon" />
           <div className="flex flex-col">
             <span className="font-bold">SGCS Chile</span>
-            <span className="text-[10px] text-[var(--brand-primary)] uppercase tracking-wider">SaaS Multi-Empresa</span>
+            <span className="text-[10px] text-[var(--brand-primary)] uppercase tracking-wider">
+               SaaS {user?.role === 'SUPER_ADMIN' ? 'Root Controller' : 'Multi-Empresa'}
+            </span>
           </div>
         </div>
       </div>

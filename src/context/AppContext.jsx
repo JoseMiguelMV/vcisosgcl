@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import { initialControls } from '../data/controls';
 
 const API_BASE = 'http://localhost:3050/api';
@@ -29,7 +28,9 @@ export const AppProvider = ({ children }) => {
   const [risks, setRisks] = useState([]);
   const [documents, setDocuments] = useState([]);
   const [users, setUsers] = useState([]);
+  const [companies, setCompanies] = useState([]); // For SuperAdmin
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [loadingCompanies, setLoadingCompanies] = useState(false);
   const [theme, setTheme] = useState(() => getSavedData('sgcs_theme', 'dark'));
 
   const [compliance, setCompliance] = useState({
@@ -41,25 +42,14 @@ export const AppProvider = ({ children }) => {
 
   // --- HELPER: API FETCH ---
   const apiFetch = useCallback(async (endpoint, options = {}) => {
-    const headers = {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    };
+    const headers = { 'Content-Type': 'application/json', ...options.headers };
+    if (company?.id) headers['x-company-id'] = company.id;
 
-    if (company?.id) {
-      headers['x-company-id'] = company.id;
-    }
-
-    const response = await fetch(`${API_BASE}${endpoint}`, {
-      ...options,
-      headers
-    });
-
+    const response = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
     if (!response.ok) {
       const err = await response.json();
       throw new Error(err.error || 'API Error');
     }
-
     return response.json();
   }, [company]);
 
@@ -69,11 +59,9 @@ export const AppProvider = ({ children }) => {
       method: 'POST',
       body: JSON.stringify({ email, password, companyName })
     });
-    
     setUser({ id: data.id, name: data.name, email: data.email, role: data.role });
     setCompany(data.company);
     setIsLoggedIn(true);
-    
     window.localStorage.setItem('sgcs_session_user', JSON.stringify(data));
     window.localStorage.setItem('sgcs_session_company', JSON.stringify(data.company));
   };
@@ -83,11 +71,9 @@ export const AppProvider = ({ children }) => {
       method: 'POST',
       body: JSON.stringify({ email, password, name, companyName })
     });
-    
     setUser({ id: data.id, name: data.name, email: data.email, role: data.role });
     setCompany(data.company);
     setIsLoggedIn(true);
-
     window.localStorage.setItem('sgcs_session_user', JSON.stringify(data));
     window.localStorage.setItem('sgcs_session_company', JSON.stringify(data.company));
   };
@@ -98,12 +84,33 @@ export const AppProvider = ({ children }) => {
     setIsLoggedIn(false);
     window.localStorage.removeItem('sgcs_session_user');
     window.localStorage.removeItem('sgcs_session_company');
-    // Clear other data to prevent leakage on same browser
     setIncidents([]);
     setRisks([]);
     setDocuments([]);
+    setCompanies([]);
   };
 
+  // --- SUPERADMIN ACTIONS ---
+  const createCompanyWithAdmin = async (companyName, adminEmail, adminPassword, adminName) => {
+    const result = await apiFetch('/superadmin/companies', {
+      method: 'POST',
+      body: JSON.stringify({ companyName, adminEmail, adminPassword, adminName })
+    });
+    setCompanies(prev => [...prev, { ...result.company, users: [result.user] }]);
+    return result;
+  };
+
+  const setupSuperAdmin = async (email, password, name) => {
+    const data = await apiFetch('/auth/setup-superadmin', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, name })
+    });
+    setUser(data);
+    setCompany(data.company);
+    setIsLoggedIn(true);
+  };
+
+  // --- ADMIN ACTIONS ---
   const registerUser = async (email, password, name, role) => {
     const newUser = await apiFetch('/admin/users', {
       method: 'POST',
@@ -114,26 +121,17 @@ export const AppProvider = ({ children }) => {
 
   // --- COMPLIANCE CALCULATION ---
   useEffect(() => {
-    let isoTotal = 0, isoScore = 0;
-    let nistTotal = 0, nistScore = 0;
-
+    let isoTotal = 0, isoScore = 0; nistTotal = 0, nistScore = 0;
     const getScore = (state) => {
       if (state === 'Implementado' || state === 'Auditado') return 100;
       if (state === 'En progreso') return 50;
       return 0;
     };
-
     controls.forEach(ctrl => {
       const score = getScore(ctrl.state);
-      if (ctrl.norm === 'ISO 27001') {
-        isoTotal += 100;
-        isoScore += score;
-      } else if (ctrl.norm === 'NIST CSF') {
-        nistTotal += 100;
-        nistScore += score;
-      }
+      if (ctrl.norm === 'ISO 27001') { isoTotal += 100; isoScore += score; }
+      else if (ctrl.norm === 'NIST CSF') { nistTotal += 100; nistScore += score; }
     });
-
     setCompliance(prev => ({
       ...prev,
       iso27001: isoTotal ? Math.round((isoScore / isoTotal) * 100) : 0,
@@ -141,12 +139,17 @@ export const AppProvider = ({ children }) => {
     }));
   }, [controls]);
 
-  // --- DATA FETCHING (Triggered by login/company change) ---
+  // --- DATA FETCHING ---
   useEffect(() => {
     if (!isLoggedIn || !company?.id) return;
 
     const fetchData = async () => {
       try {
+        if (user.role === 'SUPER_ADMIN') {
+          const companyData = await apiFetch('/superadmin/companies');
+          setCompanies(companyData);
+        }
+
         const [ctrlData, riskData, incData, docData, userData] = await Promise.all([
           apiFetch('/controls'),
           apiFetch('/risks'),
@@ -155,7 +158,6 @@ export const AppProvider = ({ children }) => {
           apiFetch('/admin/users')
         ]);
 
-        // Controls Merge Logic
         if (ctrlData.length > 0) {
           const backendMap = {};
           ctrlData.forEach(c => { backendMap[c.id] = c; });
@@ -164,11 +166,7 @@ export const AppProvider = ({ children }) => {
             state: backendMap[ctrl.id]?.state || ctrl.state
           })));
         } else {
-          // Seed if empty
-          await apiFetch('/controls/seed', {
-            method: 'POST',
-            body: JSON.stringify({ initialControls })
-          });
+          await apiFetch('/controls/seed', { method: 'POST', body: JSON.stringify({ initialControls }) });
           setControls(initialControls);
         }
 
@@ -180,74 +178,26 @@ export const AppProvider = ({ children }) => {
         console.error('Data fetch error:', err);
       }
     };
-
     fetchData();
-  }, [isLoggedIn, company?.id, apiFetch]);
+  }, [isLoggedIn, company?.id, user?.role, apiFetch]);
 
-  // --- ACTIONS ---
+  // --- RESOURCE ACTIONS ---
+  const updateControlState = async (id, newState) => {
+    setControls(controls.map(ctrl => ctrl.id === id ? { ...ctrl, state: newState } : ctrl));
+    await apiFetch(`/controls/${id}`, { method: 'PUT', body: JSON.stringify({ state: newState }) });
+  };
+  
   const addIncident = async (incident) => {
     const data = await apiFetch('/incidents', {
       method: 'POST',
-      body: JSON.stringify({
-        ...incident,
-        logs: [{ action: 'Incidente Reportado', user: user?.name || 'Sistema', date: new Date().toISOString() }]
-      })
+      body: JSON.stringify({ ...incident, logs: [{ action: 'Incidente Reportado', user: user?.name, date: new Date().toISOString() }] })
     });
     setIncidents([data, ...incidents]);
   };
 
-  const addIncidentLog = async (id, action, userName) => {
-    const data = await apiFetch(`/incidents/${id}/logs`, {
-      method: 'POST',
-      body: JSON.stringify({ action, user: userName || user?.name })
-    });
-    setIncidents(incidents.map(inc => inc.id === id ? { ...inc, logs: [...inc.logs, data] } : inc));
-  };
-
-  const updateIncidentStatus = async (id, newStatus, userName) => {
-    const data = await apiFetch(`/incidents/${id}/status`, {
-      method: 'PUT',
-      body: JSON.stringify({ status: newStatus, action: `Estado cambiado a: ${newStatus}`, user: userName || user?.name })
-    });
-    setIncidents(incidents.map(inc => inc.id === id ? data : inc));
-  };
-
-  const updateControlState = async (id, newState) => {
-    setControls(controls.map(ctrl => ctrl.id === id ? { ...ctrl, state: newState } : ctrl));
-    await apiFetch(`/controls/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify({ state: newState })
-    });
-  };
-
   const addRisk = async (risk) => {
-    const data = await apiFetch('/risks', {
-      method: 'POST',
-      body: JSON.stringify(risk)
-    });
+    const data = await apiFetch('/risks', { method: 'POST', body: JSON.stringify(risk) });
     setRisks([data, ...risks]);
-  };
-
-  const addDocument = async (doc) => {
-    const data = await apiFetch('/documents', {
-      method: 'POST',
-      body: JSON.stringify(doc)
-    });
-    setDocuments([data, ...documents]);
-  };
-
-  const linkDocumentToControl = async (docId, controlId) => {
-    setDocuments(documents.map(doc => doc.id === docId ? { ...doc, linkedControl: controlId } : doc));
-    updateControlState(controlId, 'Auditado');
-  };
-
-  const getAdvisorRecommendations = () => {
-    const recs = [];
-    const highRisks = risks.filter(r => (r.impact * r.probability) >= 15);
-    const activeIncs = incidents.filter(i => i.status !== 'Cerrado');
-    if (highRisks.length > 0) recs.push({ type: 'risk', priority: 'Crítica', message: `Se detectaron ${highRisks.length} riesgos críticos.` });
-    if (activeIncs.some(i => i.severity === 'high')) recs.push({ type: 'incident', priority: 'Urgente', message: 'Existen incidentes de alta severidad activos.' });
-    return recs;
   };
 
   // --- THEME ---
@@ -257,30 +207,11 @@ export const AppProvider = ({ children }) => {
   }, [theme]);
 
   const value = {
-    user,
-    company,
-    isLoggedIn,
-    login,
-    register,
-    logout,
-    registerUser,
-    users,
-    loadingUsers,
-    incidents,
-    addIncident,
-    addIncidentLog,
-    updateIncidentStatus,
-    compliance,
-    controls,
-    updateControlState,
-    risks,
-    addRisk,
-    documents,
-    addDocument,
-    linkDocumentToControl,
-    getAdvisorRecommendations,
-    theme,
-    toggleTheme: () => setTheme(t => t === 'dark' ? 'light' : 'dark')
+    user, company, isLoggedIn, login, register, logout, 
+    registerUser, users, loadingUsers,
+    companies, createCompanyWithAdmin, setupSuperAdmin,
+    incidents, addIncident, compliance, controls, updateControlState, risks, addRisk,
+    documents, theme, toggleTheme: () => setTheme(t => t === 'dark' ? 'light' : 'dark')
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

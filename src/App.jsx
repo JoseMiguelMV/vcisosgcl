@@ -14,10 +14,15 @@ import Settings from './pages/Settings';
 import Reports from './pages/Reports';
 import Login from './pages/Login';
 import Administration from './pages/Administration';
+import SuperAdmin from './pages/SuperAdmin';
 
-function AuthGuard({ children }) {
-  const { isLoggedIn } = useAppContext();
-  return isLoggedIn ? children : <Navigate to="/login" replace />;
+function AuthGuard({ children, roleRequired }) {
+  const { isLoggedIn, user } = useAppContext();
+  
+  if (!isLoggedIn) return <Navigate to="/login" replace />;
+  if (roleRequired && user?.role !== roleRequired) return <Navigate to="/dashboard" replace />;
+  
+  return children;
 }
 
 function AppContent() {
@@ -41,6 +46,7 @@ function AppContent() {
           <Route path="settings" element={<Settings />} />
           <Route path="reports" element={<Reports />} />
           <Route path="administration" element={<Administration />} />
+          <Route path="superadmin" element={<AuthGuard roleRequired="SUPER_ADMIN"><SuperAdmin /></AuthGuard>} />
         </Route>
       </Routes>
     </BrowserRouter>
