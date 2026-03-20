@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Map, CheckSquare, ShieldAlert, FileText, Settings, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Map, CheckSquare, ShieldAlert, FileText, Settings, ShieldCheck, Users } from 'lucide-react';
 
 function Sidebar({ mobileOpen }) {
   const menuItems = [
@@ -8,9 +8,10 @@ function Sidebar({ mobileOpen }) {
     { name: 'Mapa de Ruta', icon: <Map className="w-5 h-5" />, path: '/roadmap' },
     { name: 'Cumplimiento', icon: <CheckSquare className="w-5 h-5" />, path: '/compliance' },
     { name: 'Gestión de Riesgos', icon: <ShieldAlert className="w-5 h-5" />, path: '/risks' },
-    { name: 'Incidentes', icon: <ShieldCheck className="w-5 h-5 cursor-pointer" />, path: '/incidents' },
-    { name: 'Repositorio', icon: <FileText className="w-5 h-5 cursor-pointer" />, path: '/documents' },
+    { name: 'Incidentes', icon: <ShieldCheck className="w-5 h-5" />, path: '/incidents' },
+    { name: 'Repositorio', icon: <FileText className="w-5 h-5" />, path: '/documents' },
     { name: 'Reportes', icon: <FileText className="w-5 h-5" />, path: '/reports' },
+    { name: 'Administración', icon: <Users className="w-5 h-5" />, path: '/administration' },
     { name: 'Configuración', icon: <Settings className="w-5 h-5" />, path: '/settings' },
   ];
 
@@ -19,7 +20,10 @@ function Sidebar({ mobileOpen }) {
       <div className="sidebar-header">
         <div className="brand-logo">
           <ShieldCheck className="brand-icon" />
-          <span>SGCS Chile SaaS</span>
+          <div className="flex flex-col">
+            <span className="font-bold">SGCS Chile</span>
+            <span className="text-[10px] text-[var(--brand-primary)] uppercase tracking-wider">SaaS Multi-Empresa</span>
+          </div>
         </div>
       </div>
       
@@ -37,9 +41,9 @@ function Sidebar({ mobileOpen }) {
       </nav>
 
       <div className="sidebar-footer">
-        <div className="flex items-center justify-between text-[12px] text-[var(--text-muted)]">
+        <div className="flex items-center justify-between text-[12px] text-[var(--text-muted)] px-2">
           <span>v2.0 Beta</span>
-          <span>Soporte</span>
+          <span className="hover:text-white cursor-pointer">Soporte</span>
         </div>
       </div>
     </aside>

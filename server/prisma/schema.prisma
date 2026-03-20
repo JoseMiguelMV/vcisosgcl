@@ -8,28 +8,50 @@ datasource db {
 }
 
 model Company {
-  id           String  @id @default(uuid())
-  name         String
+  id           String     @id @default(uuid())
+  name         String     @unique
   rut          String
   legalContact String
-  configured   Boolean @default(false)
+  configured   Boolean    @default(false)
+  users        User[]
+  controls     Control[]
+  risks        Risk[]
+  incidents    Incident[]
+  documents    Document[]
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("USER") // ADMIN, USER
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  createdAt DateTime @default(now())
 }
 
 model Control {
-  id    String @id
-  norm  String
-  name  String
-  state String
-  ley   String
+  id        String   @id
+  norm      String
+  name      String
+  state     String
+  ley       String
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+
+  @@unique([id, companyId])
 }
 
 model Risk {
-  id          String @id @default(uuid())
+  id          String   @id @default(uuid())
   title       String
   impact      Int
   probability Int
   plan        String
   description String
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
 }
 
 model Incident {
@@ -40,6 +62,8 @@ model Incident {
   status         String
   date           DateTime      @default(now())
   legalCountdown Int?
+  companyId      String
+  company        Company       @relation(fields: [companyId], references: [id])
   logs           IncidentLog[]
 }
 
@@ -53,11 +77,13 @@ model IncidentLog {
 }
 
 model Document {
-  id     Int      @id @default(autoincrement())
-  name   String
-  type   String
-  folder String
-  date   DateTime @default(now())
-  size   String
-  author String
+  id        Int      @id @default(autoincrement())
+  name      String
+  type      String
+  folder    String
+  date      DateTime @default(now())
+  size      String
+  author    String
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
 }
