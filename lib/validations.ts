@@ -53,7 +53,7 @@ export const createDocumentSchema = z.object({
 });
 
 export const updateControlSchema = z.object({
-  state: z.enum(['Implementado', 'En progreso', 'No implementado', 'Auditado', 'No aplicable']),
+  state: z.enum(['No iniciado', 'Implementado', 'En progreso', 'En curso', 'No implementado', 'Auditado', 'No aplicable']),
 });
 
 export const updateCompanySchema = z.object({
