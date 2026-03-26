@@ -32,7 +32,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const { email, password, name, role } = result.data;
 
-      const existing = await prisma.user.findUnique({ where: { email } });
+      const existing = await prisma.user.findUnique({ where: { email_companyId: { email, companyId: user.companyId } } });
       if (existing) {
         return res.status(400).json({ error: 'El email ya está registrado' });
       }

@@ -71,7 +71,7 @@ export const AppProvider = ({ children }) => {
     if (!refreshToken) return false;
 
     try {
-      const response = await fetch(`${API_BASE}/auth/refresh`, {
+      const response = await fetch(`${API_BASE}/auth?action=refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken }),
@@ -120,7 +120,7 @@ export const AppProvider = ({ children }) => {
   }, [accessToken, refreshToken, company?.id, refreshAccessToken]);
 
   const login = async (email, password) => {
-    const data = await apiFetch('/auth/login', {
+    const data = await apiFetch('/auth?action=login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
@@ -129,7 +129,7 @@ export const AppProvider = ({ children }) => {
   };
 
   const register = async (email, password, name, companyName) => {
-    const data = await apiFetch('/auth/register', {
+    const data = await apiFetch('/auth?action=register', {
       method: 'POST',
       body: JSON.stringify({ email, password, name, companyName }),
     });
@@ -138,7 +138,7 @@ export const AppProvider = ({ children }) => {
   };
 
   const setupSuperAdmin = async (email, password, name) => {
-    const data = await apiFetch('/auth/setup-superadmin', {
+    const data = await apiFetch('/auth?action=setup-superadmin', {
       method: 'POST',
       body: JSON.stringify({ email, password, name }),
     });
@@ -169,7 +169,12 @@ export const AppProvider = ({ children }) => {
 
   const updateControlState = async (id, newState) => {
     setControls(prev => prev.map(c => c.id === id ? { ...c, state: newState } : c));
-    await apiFetch(`/controls/${id}`, { method: 'PUT', body: JSON.stringify({ state: newState }) }).catch(() => {});
+    try {
+      const result = await apiFetch(`/controls/${id}`, { method: 'PUT', body: JSON.stringify({ state: newState }) });
+      console.log('Control guardado:', id, newState);
+    } catch (error) {
+      console.error('Error guardando control:', id, error);
+    }
   };
 
   useEffect(() => {
@@ -190,7 +195,7 @@ export const AppProvider = ({ children }) => {
           ctrls.forEach(c => map[c.id] = c);
           setControls(initialControls.map(c => ({ ...c, state: map[c.id]?.state || c.state })));
         } else if (user?.role !== 'SUPER_ADMIN') {
-          await apiFetch('/controls/seed', { method: 'POST', body: JSON.stringify({ initialControls }) }).catch(() => {});
+          await apiFetch('/controls?action=seed', { method: 'POST', body: JSON.stringify({ initialControls }) }).catch(() => {});
         }
 
         if (rsks) setRisks(rsks);
