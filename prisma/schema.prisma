@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -13,8 +13,8 @@ model Company {
   rut          String
   legalContact String
   configured   Boolean    @default(false)
-  logo         String?    // URL o base64
-  primaryColor String?    // Ej: #3b82f6
+  logo         String?
+  primaryColor String?
   users        User[]
   controls     Control[]
   risks        Risk[]
@@ -37,8 +37,7 @@ model User {
 }
 
 model Control {
-  dbId      String   @id @default(uuid())
-  id        String   // Ej: A.5.1
+  id        String   @id
   norm      String
   name      String
   state     String
