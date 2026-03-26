@@ -25,13 +25,15 @@ model Company {
 
 model User {
   id           String   @id @default(uuid())
-  email        String   @unique
+  email        String
   passwordHash String
   name         String
   role         String   @default("USER")
   companyId    String
   company      Company  @relation(fields: [companyId], references: [id])
   createdAt    DateTime @default(now())
+
+  @@unique([email, companyId])
 }
 
 model Control {

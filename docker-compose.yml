@@ -6,31 +6,47 @@ services:
     restart: always
     environment:
       POSTGRES_USER: vciso_admin
-      POSTGRES_PASSWORD: password123
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password123}
       POSTGRES_DB: sgcs_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
+    networks:
+      - app-network
 
   backend:
     build: ./server
     restart: always
     environment:
-      DATABASE_URL: "postgresql://vciso_admin:password123@db:5432/sgcs_db"
+      DATABASE_URL: "postgresql://vciso_admin:${DB_PASSWORD:-password123}@db:5432/sgcs_db"
       PORT: 3000
+      NODE_ENV: production
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:80}
     depends_on:
       - db
     ports:
       - "3050:3000"
+    networks:
+      - app-network
 
   frontend:
     build: .
     restart: always
     depends_on:
       - backend
+    environment:
+      VITE_API_URL: http://backend:3000/api
     ports:
       - "80:80"
+    networks:
+      - app-network
 
 volumes:
   postgres_data:
+
+networks:
+  app-network:
+    driver: bridge

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckSquare, Search, FileText, Download, Building, ChevronDown, ChevronRight, Info } from 'lucide-react';
+import { CheckSquare, Search, FileText, Download, ChevronDown, ChevronRight, Info } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -73,16 +73,8 @@ function Compliance() {
         </div>
       </div>
 
-      {!company.configured ? (
-        <div className="card p-12 flex flex-col items-center justify-center text-center opacity-80 border-dashed border-2">
-          <Building className="w-16 h-16 text-[var(--text-muted)] mb-4" />
-          <h2 className="text-xl font-bold mb-2">Completar Datos de la Organización</h2>
-          <p className="max-w-md text-[var(--text-secondary)] mb-6">Para habilitar el checklist de cumplimiento ISO 27001 y las validaciones de las Leyes Chilenas, debe configurar primero su organización base y el responsable legal.</p>
-          <button className="btn btn-primary" onClick={() => navigate('/settings')}>Ir a Configuración</button>
-        </div>
-      ) : (
-        <>
-          <div className="card mb-6 flex gap-4 bg-[var(--bg-secondary)] py-4 items-center flex-wrap">
+      <>
+        <div className="card mb-6 flex gap-4 bg-[var(--bg-secondary)] py-4 items-center flex-wrap">
             <div className="header-search flex-1 w-full max-w-lg">
               <Search className="search-icon" />
               <input 
@@ -226,7 +218,6 @@ function Compliance() {
         Mostrando {filteredControls.length} de {controls.length} controles
       </div>
      </>
-    )}
     </div>
   );
 }

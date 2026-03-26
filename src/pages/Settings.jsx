@@ -1,52 +1,45 @@
 import React, { useState, useEffect } from 'react';
-import { User, Shield, Building, Bell, Globe, Key, Settings as SettingsIcon, CreditCard, CheckCircle, Save, Loader2, Info } from 'lucide-react';
+import { User, Building, Globe, CreditCard, CheckCircle, Save, Loader2, Info, X } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 
+const API_BASE = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? '/api' : '');
+
 function Settings() {
-  const { theme, toggleTheme, company, login, user } = useAppContext();
+  const { theme, toggleTheme, company, user, accessToken } = useAppContext();
   const [activeTab, setActiveTab] = useState('org');
   const [formData, setFormData] = useState({
     name: '',
     rut: '',
     legalContact: '',
-    userName: '',
-    userEmail: ''
+    primaryColor: '#3b82f6',
+    logo: ''
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
-  // Load initial data
   useEffect(() => {
     if (company) {
       setFormData(prev => ({
         ...prev,
         name: company.name || '',
         rut: company.rut || '',
-        legalContact: company.legalContact || ''
+        legalContact: company.legalContact || '',
+        primaryColor: company.primaryColor || '#3b82f6',
+        logo: company.logo || ''
       }));
     }
-    if (user) {
-      setFormData(prev => ({
-        ...prev,
-        userName: user.name || '',
-        userEmail: user.email || ''
-      }));
-    }
-  }, [company, user]);
+  }, [company]);
 
   const handleSave = async () => {
     setLoading(true);
     setMessage({ type: '', text: '' });
     try {
-      // In a real app we would have PUT /api/company and PUT /api/user
-      // For now we'll simulate success and show it's working
-      
-      // If we had the actual endpoint (which I added in index.ts for company):
-      const response = await fetch(`http://localhost:3050/api/company`, {
+      const response = await fetch(`${API_BASE}/company`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-company-id': company.id
+          'Authorization': `Bearer ${accessToken}`,
+          'x-company-id': company?.id
         },
         body: JSON.stringify({
           name: formData.name,
@@ -56,13 +49,12 @@ function Settings() {
         })
       });
 
-      if (!response.ok) throw new Error('Error al guardar datos de empresa');
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Error al guardar');
+      }
       
-      setMessage({ type: 'success', text: 'Configuración guardada correctamente. Los cambios se verán reflejados al recargar.' });
-      
-      // Update local state if needed (not strictly required if we reload, but good for UX)
-      setTimeout(() => window.location.reload(), 1500);
-
+      setMessage({ type: 'success', text: 'Configuración guardada correctamente.' });
     } catch (err) {
       setMessage({ type: 'error', text: err.message });
     } finally {
@@ -74,12 +66,12 @@ function Settings() {
     <div className="animate-fade-in stagger-2">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Configuración del Sistema</h1>
-          <p className="page-subtitle">Gestión de identidad corporativa y preferencias vCISO</p>
+          <h1 className="page-title">Configuración</h1>
+          <p className="page-subtitle">Personaliza tu plataforma y preferencias</p>
         </div>
         <button className="btn btn-primary shadow-glow flex items-center gap-2" onClick={handleSave} disabled={loading}>
           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5"/>}
-          Guardar Todo
+          Guardar Cambios
         </button>
       </div>
 
@@ -87,199 +79,168 @@ function Settings() {
         <div className={`p-4 rounded-xl mb-6 flex items-center gap-3 animate-slide-in border ${
           message.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-red-500/10 border-red-500/20 text-red-500'
         }`}>
-           <Info className="w-5 h-5 flex-shrink-0" />
-           {message.text}
+          <Info className="w-5 h-5 flex-shrink-0" />
+          {message.text}
+          <button onClick={() => setMessage({ type: '', text: '' })} className="ml-auto">
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
       <div className="flex flex-col md:flex-row gap-8">
-        <div className="w-full md:w-72">
+        <div className="w-full md:w-64">
           <div className="card p-2 flex flex-col gap-1 sticky top-6">
             <button 
               onClick={() => setActiveTab('org')}
               className={`flex items-center gap-3 p-4 rounded-xl text-sm font-bold transition-all ${activeTab === 'org' ? 'bg-[var(--brand-primary)] text-white shadow-glow-sm' : 'hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'}`}
             >
-               <Building className="w-5 h-5" /> Empresa / Organización
+              <Building className="w-5 h-5" /> Empresa
             </button>
             <button 
               onClick={() => setActiveTab('perfil')}
               className={`flex items-center gap-3 p-4 rounded-xl text-sm font-bold transition-all ${activeTab === 'perfil' ? 'bg-[var(--brand-primary)] text-white shadow-glow-sm' : 'hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'}`}
             >
-               <User className="w-5 h-5" /> Mi Perfil de Usuario
+              <User className="w-5 h-5" /> Mi Perfil
             </button>
             <button 
-               onClick={() => setActiveTab('preferencias')}
+              onClick={() => setActiveTab('preferencias')}
               className={`flex items-center gap-3 p-4 rounded-xl text-sm font-bold transition-all ${activeTab === 'preferencias' ? 'bg-[var(--brand-primary)] text-white shadow-glow-sm' : 'hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'}`}
             >
-               <Globe className="w-5 h-5" /> Apariencia y Región
-            </button>
-             <button 
-               onClick={() => setActiveTab('plan')}
-              className={`flex items-center gap-3 p-4 rounded-xl text-sm font-bold transition-all ${activeTab === 'plan' ? 'bg-[var(--brand-primary)] text-white shadow-glow-sm' : 'hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'}`}
-            >
-               <CreditCard className="w-5 h-5" /> Suscripción Saas
+              <Globe className="w-5 h-5" /> Apariencia
             </button>
           </div>
         </div>
 
-        <div className="flex-1 card min-h-[600px] p-10 bg-gradient-to-b from-[rgba(255,255,255,0.02)] to-transparent">
-           
+        <div className="flex-1 card min-h-[500px] p-8">
           {activeTab === 'org' && (
-            <div className="animate-fade-in space-y-8">
-              <div className="border-b border-[var(--border-color)] pb-6 mb-8">
-                <h2 className="text-2xl font-black flex items-center gap-3 uppercase tracking-tighter">
-                   <Building className="text-[var(--brand-primary)] w-8 h-8"/> 
-                   Entidad Corporativa
+            <div className="animate-fade-in space-y-6">
+              <div className="border-b border-[var(--border-color)] pb-4">
+                <h2 className="text-xl font-black flex items-center gap-2">
+                  <Building className="text-[var(--brand-primary)]" /> 
+                  Datos de la Empresa
                 </h2>
-                <p className="text-sm text-[var(--text-muted)] mt-1">Configure los datos legales que aparecerán en sus reportes de cumplimiento.</p>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="form-group">
-                  <label className="form-label text-xs font-black uppercase tracking-widest text-[var(--text-muted)]">Razón Social</label>
+                  <label className="form-label">Razón Social</label>
                   <input 
                     type="text" 
                     className="form-control" 
-                    placeholder="Ej. Acme Corp SpA" 
+                    placeholder="Mi Empresa SpA" 
                     value={formData.name} 
                     onChange={e => setFormData({...formData, name: e.target.value})} 
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label text-xs font-black uppercase tracking-widest text-[var(--text-muted)]">RUT de la Empresa</label>
+                  <label className="form-label">RUT</label>
                   <input 
                     type="text" 
                     className="form-control" 
-                    placeholder="Ej. 76.123.456-7" 
+                    placeholder="76.123.456-7" 
                     value={formData.rut} 
                     onChange={e => setFormData({...formData, rut: e.target.value})} 
                   />
                 </div>
-                <div className="form-group col-span-2 mt-4 border-b border-[var(--border-color)] pb-8 mb-8">
-                  <label className="form-label text-xs font-black uppercase tracking-widest text-[var(--text-muted)]">Responsable Legal (Para Notificaciones ley 19.628 / 21.459)</label>
-                  <input type="email" className="form-control" value={formData.legalContact} onChange={e => setFormData({...formData, legalContact: e.target.value})} placeholder="legal@empresa.cl" />
-                  <p className="text-xs mt-2 text-[var(--text-muted)]">Este correo recibirá el exportable cuando se levante un incidente grave con plazo legal.</p>
-                </div>
-
-                <div className="form-group col-span-2">
-                   <h4 className="text-sm font-black uppercase tracking-tighter mb-4 flex items-center gap-2">
-                      <Globe className="w-4 h-4 text-[var(--brand-primary)]" />
-                      Personalización de Marca (Whitelabeling)
-                   </h4>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6 rounded-2xl bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] shadow-inner">
-                      <div>
-                         <label className="form-label text-[10px] font-bold uppercase opacity-50">Color Primario Corporativo</label>
-                         <div className="flex gap-4 items-center mt-3">
-                            <input type="color" className="w-12 h-12 p-0 border-none bg-transparent cursor-pointer rounded-lg overflow-hidden" value={formData.primaryColor || '#3b82f6'} onChange={e => setFormData({...formData, primaryColor: e.target.value})} />
-                            <div className="flex flex-col">
-                               <span className="font-mono text-sm font-bold uppercase tracking-tight">{formData.primaryColor || '#3b82f6'}</span>
-                               <span className="text-[10px] text-[var(--text-muted)] italic">Afecta botones y headers</span>
-                            </div>
-                         </div>
-                      </div>
-                      <div>
-                         <label className="form-label text-[10px] font-bold uppercase opacity-50">URL del Logo (PNG / SVG)</label>
-                         <input type="text" className="form-control mt-2" placeholder="https://cdn.empresa.com/logo.png" value={formData.logo || ''} onChange={e => setFormData({...formData, logo: e.target.value})} />
-                         <p className="text-[10px] text-[var(--text-muted)] mt-2">Se recomienda fondo transparente y proporción horizontal.</p>
-                      </div>
-                   </div>
+                <div className="form-group md:col-span-2">
+                  <label className="form-label">Email Legal (para notificaciones)</label>
+                  <input 
+                    type="email" 
+                    className="form-control" 
+                    placeholder="legal@empresa.cl" 
+                    value={formData.legalContact} 
+                    onChange={e => setFormData({...formData, legalContact: e.target.value})} 
+                  />
+                  <p className="text-xs text-[var(--text-muted)] mt-1">Recibirás alertas de incidentes con plazos legales aquí.</p>
                 </div>
               </div>
 
-               <div className="mt-10 p-6 rounded-2xl bg-[rgba(16,185,129,0.03)] border border-[rgba(16,185,129,0.1)] flex items-center gap-4">
-                  <div className="p-3 bg-[var(--brand-success)] rounded-xl text-white shadow-glow-sm">
-                     <CheckCircle className="w-6 h-6" />
+              <div className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
+                <h4 className="text-sm font-bold mb-4 flex items-center gap-2">
+                  <Globe className="w-4 h-4" /> Personalización
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="form-label text-xs">Color primario</label>
+                    <div className="flex gap-3 items-center">
+                      <input 
+                        type="color" 
+                        className="w-10 h-10 p-0 border-none bg-transparent cursor-pointer rounded" 
+                        value={formData.primaryColor} 
+                        onChange={e => setFormData({...formData, primaryColor: e.target.value})} 
+                      />
+                      <span className="font-mono text-sm">{formData.primaryColor}</span>
+                    </div>
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold uppercase tracking-tight">Estado de Configuración Saas</h4>
-                    <p className="text-xs text-[var(--text-secondary)]">Al completar estos datos, su plataforma se activará completamente para el análisis de brechas ISO 27001.</p>
+                    <label className="form-label text-xs">Logo URL</label>
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      placeholder="https://..." 
+                      value={formData.logo} 
+                      onChange={e => setFormData({...formData, logo: e.target.value})} 
+                    />
                   </div>
-               </div>
+                </div>
+              </div>
             </div>
           )}
 
           {activeTab === 'perfil' && (
-            <div className="animate-fade-in">
-              <div className="border-b border-[var(--border-color)] pb-6 mb-10">
-                <h2 className="text-2xl font-black flex items-center gap-3 uppercase tracking-tighter">
-                   <User className="text-[var(--brand-primary)] w-8 h-8"/> 
-                   Perfil de Usuario
+            <div className="animate-fade-in space-y-6">
+              <div className="border-b border-[var(--border-color)] pb-4">
+                <h2 className="text-xl font-black flex items-center gap-2">
+                  <User className="text-[var(--brand-primary)]" /> 
+                  Mi Perfil
                 </h2>
-                <p className="text-sm text-[var(--text-muted)] mt-1">Gestione sus preferencias individuales de acceso.</p>
               </div>
 
-              <div className="flex items-center gap-8 mb-10">
-                <div className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-[var(--brand-primary)] to-[var(--brand-secondary)] flex items-center justify-center text-4xl font-black text-white shadow-glow">
-                  {formData.userName?.charAt(0) || 'U'}
+              <div className="flex items-center gap-6 mb-6">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[var(--brand-primary)] to-[var(--brand-secondary)] flex items-center justify-center text-2xl font-black text-white shadow-glow">
+                  {user?.name?.charAt(0) || 'U'}
                 </div>
-                <div className="space-y-2">
-                  <button className="btn btn-outline py-2 px-4 text-xs font-bold uppercase tracking-widest">Sincronizar Avatar</button>
-                  <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-tighter">Identificador Único: {user?.id?.substring(0,8)}</p>
+                <div>
+                  <p className="font-bold text-lg">{user?.name}</p>
+                  <p className="text-sm text-[var(--text-muted)]">{user?.email}</p>
+                  <span className="inline-block mt-1 px-2 py-0.5 text-xs font-bold bg-[var(--brand-primary)]/20 text-[var(--brand-primary)] rounded">
+                    {user?.role}
+                  </span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="form-group">
-                  <label className="form-label text-xs font-bold uppercase text-[var(--text-muted)]">Nombre para Mostrar</label>
-                  <input type="text" className="form-control" value={formData.userName} onChange={e => setFormData({...formData, userName: e.target.value})} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label text-xs font-bold uppercase text-[var(--text-muted)]">Rol Asignado</label>
-                  <input type="text" className="form-control opacity-50 font-mono" disabled value={user?.role} />
-                </div>
-                <div className="form-group md:col-span-2">
-                  <label className="form-label text-xs font-bold uppercase text-[var(--text-muted)]">Email de Acceso</label>
-                  <input type="email" className="form-control" value={formData.userEmail} onChange={e => setFormData({...formData, userEmail: e.target.value})} />
-                </div>
+              <div className="p-6 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
+                <p className="text-sm text-[var(--text-muted)]">
+                  Tu perfil se gestiona automáticamente desde el sistema. Para cambios de email o nombre, contacta al administrador.
+                </p>
               </div>
             </div>
           )}
 
           {activeTab === 'preferencias' && (
-             <div className="animate-fade-in space-y-10">
-                <div>
-                   <h3 className="text-xs font-black uppercase text-[var(--brand-primary)] mb-6 tracking-widest">Apariencia Visual</h3>
-                   <div className="p-6 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-primary)] flex items-center justify-between">
-                      <div className="flex items-center gap-6">
-                        <div className="w-14 h-14 rounded-2xl bg-[var(--bg-tertiary)] flex justify-center items-center text-2xl shadow-inner">
-                           {theme === 'dark' ? '🌙' : '☀️'}
-                        </div>
-                        <div>
-                          <p className="font-black text-lg uppercase tracking-tight">Tema {theme === 'dark' ? 'Deep Space' : 'Everlight'}</p>
-                          <p className="text-xs text-[var(--text-muted)]">Cambie la interfaz para mejorar la legibilidad.</p>
-                        </div>
-                      </div>
-                      <button className="btn btn-primary px-6 shadow-glow" onClick={toggleTheme}>Intercambiar</button>
-                   </div>
-                </div>
+            <div className="animate-fade-in space-y-6">
+              <div className="border-b border-[var(--border-color)] pb-4">
+                <h2 className="text-xl font-black flex items-center gap-2">
+                  <Globe className="text-[var(--brand-primary)]" /> 
+                  Apariencia
+                </h2>
+              </div>
 
-                <div>
-                   <h3 className="text-xs font-black uppercase text-[var(--brand-primary)] mb-6 tracking-widest">Idiomas y Región</h3>
-                   <div className="grid grid-cols-2 gap-4">
-                      <div className="form-group">
-                         <label className="form-label text-[10px] uppercase font-bold opacity-50">Idioma de la interfaz</label>
-                         <select className="form-control cursor-pointer"><option>Español (Chile)</option><option>English (SaaS US)</option></select>
-                      </div>
-                      <div className="form-group">
-                         <label className="form-label text-[10px] uppercase font-bold opacity-50">Huso Horario</label>
-                         <select className="form-control cursor-pointer"><option>GMT-3 (Santiago)</option></select>
-                      </div>
-                   </div>
+              <div className="p-6 rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-bold">Tema de la interfaz</p>
+                    <p className="text-sm text-[var(--text-muted)]">
+                      Actualmente: {theme === 'dark' ? 'Modo Oscuro' : 'Modo Claro'}
+                    </p>
+                  </div>
+                  <button className="btn btn-primary" onClick={toggleTheme}>
+                    Cambiar Tema
+                  </button>
                 </div>
-             </div>
+              </div>
+            </div>
           )}
-
-          {activeTab === 'plan' && (
-             <div className="animate-fade-in text-center py-12">
-                <CreditCard className="w-20 h-20 text-[var(--text-muted)] mx-auto mb-6 opacity-20" />
-                <h2 className="text-2xl font-black uppercase tracking-tighter mb-2">Suscripción Corporativa</h2>
-                <p className="text-[var(--text-muted)] mb-8 max-w-sm mx-auto">La gestión de pagos y planes está disponible únicamente para el propietario de la cuenta suscrita.</p>
-                <div className="p-4 bg-[var(--bg-tertiary)] rounded-2xl inline-block border border-[rgba(255,255,255,0.05)]">
-                   <span className="text-xs font-black uppercase text-[var(--brand-primary)]">vCISO Saas Pro Version</span>
-                </div>
-             </div>
-          )}
-
         </div>
       </div>
     </div>
