@@ -1,8 +1,7 @@
-import React, { useState, Suspense } from 'react';
+import React, { useState } from 'react';
 import { Shield, Lock, User, ArrowRight, Info, CheckCircle, Sparkles } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
-import Spline from '@splinetool/react-spline';
 
 function Login() {
   const [mode, setMode] = useState('login');
@@ -50,9 +49,7 @@ function Login() {
   if (registrationSuccess) {
     return (
       <div className="login-page-spline">
-        <div className="login-background-3d">
-          <Spline scene="https://prod.spline.design/pLobHlAb-ZzBOb2x/scene.splinecode" />
-        </div>
+        <div className="login-background-3d bg-gradient-to-br from-emerald-900/20 via-[#0A0F1C] to-[#0f172a]"></div>
         <div className="login-success-card animate-fade-in">
           <div className="login-header">
             <div className="logo-container">
@@ -88,8 +85,7 @@ function Login() {
 
   return (
     <div className="login-page-spline">
-      <div className="login-background-3d">
-        <Spline scene="https://prod.spline.design/pLobHlAb-ZzBOb2x/scene.splinecode" />
+      <div className="login-background-3d bg-gradient-to-br from-emerald-900/20 via-[#0A0F1C] to-[#0f172a]">
         <div className="absolute inset-0 bg-gradient-to-t from-[#0A0F1C] via-transparent to-transparent pointer-events-none"></div>
       </div>
       

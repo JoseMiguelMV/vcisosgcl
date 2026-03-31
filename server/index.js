@@ -72,7 +72,7 @@ app.post('/api/auth', (req, res) => {
           data: { name: companyName, rut: 'Sin RUT', legalContact: name, configured: false },
         });
       }
-      const existingUser = await tx.user.findUnique({ where: { email_companyId: { email, companyId: company.id } } });
+      const existingUser = await tx.user.findFirst({ where: { email, companyId: company.id } });
       if (existingUser) throw new Error('Este email ya está registrado en esta empresa');
       const passwordHash = await bcrypt.hash(password, 12);
       const user = await tx.user.create({
@@ -159,13 +159,14 @@ app.post('/api/controls', authenticateToken, (req, res) => {
     const result = schema.safeParse(req.body);
     if (!result.success) return res.status(400).json({ error: result.error.issues[0].message });
 
-    Promise.all(result.data.initialControls.map((ctrl) => 
-      prisma.control.upsert({
-        where: { id_companyId: { id: ctrl.id, companyId: req.user.companyId } },
-        update: { state: ctrl.state },
-        create: { id: ctrl.id, norm: ctrl.norm, name: ctrl.name, state: ctrl.state, ley: ctrl.ley, companyId: req.user.companyId },
-      })
-    )).then(() => res.json({ message: 'Controls seeded successfully' }))
+    Promise.all(result.data.initialControls.map(async (ctrl) => {
+      const existing = await prisma.control.findFirst({ where: { id: ctrl.id, companyId: req.user.companyId } });
+      if (existing) {
+        return prisma.control.update({ where: { dbId: existing.dbId }, data: { state: ctrl.state } });
+      } else {
+        return prisma.control.create({ data: { id: ctrl.id, norm: ctrl.norm, name: ctrl.name, state: ctrl.state, ley: ctrl.ley, companyId: req.user.companyId } });
+      }
+    })).then(() => res.json({ message: 'Controls seeded successfully' }))
       .catch((err) => res.status(500).json({ error: err.message }));
     return;
   }
@@ -173,7 +174,7 @@ app.post('/api/controls', authenticateToken, (req, res) => {
   res.status(400).json({ error: 'Acción no válida' });
 });
 
-app.put('/api/controls', authenticateToken, (req, res) => {
+app.put('/api/controls', authenticateToken, async (req, res) => {
   const { id } = req.query;
   if (!id) return res.status(400).json({ error: 'ID requerido' });
 
@@ -183,11 +184,19 @@ app.put('/api/controls', authenticateToken, (req, res) => {
   const result = schema.safeParse(req.body);
   if (!result.success) return res.status(400).json({ error: result.error.issues[0].message });
 
-  prisma.control.update({
-    where: { id_companyId: { id, companyId: req.user.companyId } },
-    data: { state: result.data.state },
-  }).then((control) => res.json(control))
-    .catch(() => res.status(404).json({ error: 'Control no encontrado' }));
+  try {
+    const existing = await prisma.control.findFirst({ where: { id: id, companyId: req.user.companyId } });
+    if (!existing) return res.status(404).json({ error: 'Control no encontrado' });
+    
+    const control = await prisma.control.update({
+      where: { dbId: existing.dbId },
+      data: { state: result.data.state },
+    });
+    res.json(control);
+  } catch (error) {
+    console.error('Update control error:', error);
+    res.status(500).json({ error: 'Error actualizando control' });
+  }
 });
 
 // ADMIN USERS
@@ -211,7 +220,7 @@ app.post('/api/admin/users', authenticateToken, (req, res) => {
 
   const { email, password, name, role } = result.data;
   
-  prisma.user.findUnique({ where: { email_companyId: { email, companyId: req.user.companyId } } })
+  prisma.user.findFirst({ where: { email, companyId: req.user.companyId } })
     .then(async (existing) => {
       if (existing) return res.status(400).json({ error: 'El email ya está registrado' });
       const passwordHash = await bcrypt.hash(password, 12);
@@ -330,7 +339,7 @@ app.get('/api/superadmin/companies', authenticateToken, (req, res) => {
     .catch((err) => res.status(500).json({ error: err.message }));
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = 3001;
 app.listen(PORT, () => {
   console.log(`Servidor API local corriendo en http://localhost:${PORT}`);
 });

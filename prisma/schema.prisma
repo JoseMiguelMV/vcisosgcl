@@ -37,7 +37,8 @@ model User {
 }
 
 model Control {
-  id        String   @id
+  id        String   @id @default(uuid())
+  controlId String   // Ej: A.5.1
   norm      String
   name      String
   state     String
@@ -45,7 +46,7 @@ model Control {
   companyId String
   company   Company  @relation(fields: [companyId], references: [id])
 
-  @@unique([id, companyId])
+  @@unique([controlId, companyId])
 }
 
 model Risk {
